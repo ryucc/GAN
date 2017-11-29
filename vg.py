@@ -26,6 +26,19 @@ params = {
     'n_hidden_inf': 128,
 }
 
+def create_distribution2(batch_size, num_components=8, num_features=2,**kwargs):
+    cat = ds.Categorical(tf.zeros(num_components, dtype=np.float32))
+    mus = np.array([np.array([i, j]) for i, j in itertools.product(range(-4, 5, 2),
+                                                           range(-4, 5, 2))],dtype=np.float32)
+    mus = np.array([[0,1],[1,0],[-1,0],[0,-1],[-1/1.4141,-1/1.4141],[-1/1.4141,1/1.4141],[1/1.4141,-1/1.4141],[1/1.4141,1/1.4141]])
+
+    s = 0.05
+    sigmas = [np.array([s,s]).astype(np.float32) for i in range(num_components)]
+    components = list((ds.MultivariateNormalDiag(mu, sigma) 
+                       for (mu, sigma) in zip(mus, sigmas)))
+    data = ds.Mixture(cat, components)
+    return data.sample(batch_size)
+
 def create_distribution(batch_size, num_components=25, num_features=2,**kwargs):
     cat = ds.Categorical(tf.zeros(num_components, dtype=np.float32))
     mus = np.array([np.array([i, j]) for i, j in itertools.product(range(-4, 5, 2),
@@ -44,8 +57,9 @@ def standard_normal(shape, **kwargs):
         ds.MultivariateNormalDiag(loc=tf.zeros(shape), scale_diag=tf.ones(shape), **kwargs))
 
 def normal_mixture(shape, **kwargs):
-    return create_distribution(shape[0],25,shape[1],**kwargs)
+    return create_distribution2(shape[0],8,shape[1],**kwargs)
 
+# reconstructor, data to noise
 def generative_network(batch_size, latent_dim, input_dim, n_layer, n_hidden, eps=1e-6,X=None):
     with tf.variable_scope("generative"):
         
@@ -56,7 +70,7 @@ def generative_network(batch_size, latent_dim, input_dim, n_layer, n_hidden, eps
         x = st.StochasticTensor(ds.Normal(p*tf.ones(input_dim), 1*tf.ones(input_dim), name="p_x"))
     return [x, z]
 
-
+# generator, noise to data
 def inference_network(x, latent_dim, n_layer, n_hidden, eps_dim):
     eps = standard_normal([x.get_shape().as_list()[0], eps_dim], name="eps").value()
     h = tf.concat([x, eps], 1)
@@ -109,7 +123,7 @@ disc_loss = tf.reduce_mean(
     tf.nn.sigmoid_cross_entropy_with_logits(logits=log_d_prior, labels=tf.zeros_like(log_d_prior)))
 
 
-recon_likelihood_prior =p_x.distribution.log_prob(x)
+recon_likelihood_prior = p_x.distribution.log_prob(x)
 recon_likelihood = tf.reduce_sum(graph_replace(recon_likelihood_prior, {p_z: q_z}), [1])
 
 
@@ -142,12 +156,12 @@ total_batch = 1000
 #  Training cycle
 for epoch in range(100):
     xx = np.vstack([sess.run(q_z) for _ in range(5)])
-    yy= np.vstack([sess.run(p_z) for _ in range(5)])
+    yy = np.vstack([sess.run(p_z) for _ in range(5)])
     fig_= plt.figure(figsize=(5,5), facecolor='w')
 
     plt.scatter(xx[:, 0], xx[:, 1],
             edgecolor='none', alpha=0.5)
-    plt.scatter(yy[:, 0], yy[:, 1], c='g', edgecolor='none')
+    #plt.scatter(yy[:, 0], yy[:, 1], c='g', edgecolor='none')
     plt.savefig('./outputs/test'+str(epoch)+'.png')
     plt.close('all')
     
