@@ -27,25 +27,25 @@ params = {
 }
 
 def create_distribution2(batch_size, num_components=8, num_features=2,**kwargs):
-    cat = ds.Categorical(tf.zeros(num_components, dtype=np.float32))
+    cat = ds.Categorical(tf.zeros(num_components, dtype=np.float64))
     mus = np.array([np.array([i, j]) for i, j in itertools.product(range(-4, 5, 2),
-                                                           range(-4, 5, 2))],dtype=np.float32)
+                                                           range(-4, 5, 2))],dtype=np.float64)
     mus = np.array([[0,1],[1,0],[-1,0],[0,-1],[-1/1.4141,-1/1.4141],[-1/1.4141,1/1.4141],[1/1.4141,-1/1.4141],[1/1.4141,1/1.4141]])
 
     s = 0.05
-    sigmas = [np.array([s,s]).astype(np.float32) for i in range(num_components)]
+    sigmas = [np.array([s,s]).astype(np.float64) for i in range(num_components)]
     components = list((ds.MultivariateNormalDiag(mu, sigma) 
                        for (mu, sigma) in zip(mus, sigmas)))
     data = ds.Mixture(cat, components)
     return data.sample(batch_size)
 
 def create_distribution(batch_size, num_components=25, num_features=2,**kwargs):
-    cat = ds.Categorical(tf.zeros(num_components, dtype=np.float32))
+    cat = ds.Categorical(tf.zeros(num_components, dtype=np.float64))
     mus = np.array([np.array([i, j]) for i, j in itertools.product(range(-4, 5, 2),
-                                                           range(-4, 5, 2))],dtype=np.float32)
+                                                           range(-4, 5, 2))],dtype=np.float64)
 
     s = 0.05
-    sigmas = [np.array([s,s]).astype(np.float32) for i in range(num_components)]
+    sigmas = [np.array([s,s]).astype(np.float64) for i in range(num_components)]
     components = list((ds.MultivariateNormalDiag(mu, sigma) 
                        for (mu, sigma) in zip(mus, sigmas)))
     data = ds.Mixture(cat, components)
@@ -192,7 +192,7 @@ yy= np.vstack([sess.run(p_z) for _ in range(5)])
 
 '''Evaluation'''
 MEANS = np.array([np.array([i, j]) for i, j in itertools.product(range(-4, 5, 2),
-                                                           range(-4, 5, 2))],dtype=np.float32)
+                                                           range(-4, 5, 2))],dtype=np.float64)
 l2_store=[]
 for x_ in xx:
     l2_store.append([np.sum((x_-i)**2)  for i in MEANS])
